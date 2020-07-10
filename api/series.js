@@ -1,5 +1,7 @@
 const express = require('express');
 const seriesRouter = express.Router();
+const issuesRouter = require('./issues');
+
 const sqlite3 = require('sqlite3');
 const db = new sqlite3.Database(
   process.env.TEST_DATABASE || './database.sqlite'
@@ -40,7 +42,7 @@ seriesRouter.post('/', (req, res, next) => {
   const name = req.body.series.name;
   const description = req.body.series.description;
   if (!name || !description) {
-    res.status(400).send();
+    return res.status(400).send();
   }
   db.run(
     'INSERT INTO Series (name, description) VALUES ($name, $description)',
@@ -68,7 +70,7 @@ seriesRouter.put('/:seriesId', (req, res, next) => {
   const name = req.body.series.name;
   const description = req.body.series.description;
   if (!name || !description) {
-    res.status(400).send();
+    return res.status(400).send();
   }
   db.run(
     'UPDATE Series SET name = $name, description = $description WHERE Series.id = $seriesId',
@@ -95,6 +97,28 @@ seriesRouter.put('/:seriesId', (req, res, next) => {
       }
     }
   );
+});
+
+seriesRouter.use('/:seriesId/issues', issuesRouter);
+
+seriesRouter.delete('/:seriesId', (req, res, next) => {
+  const issueSQL = `SELECT * FROM Issue WHERE series_id=${req.params.seriesId}`;
+  db.get(issueSQL, (error, issue) => {
+    if (error) {
+      next(error);
+    } else if (issue) {
+      res.status(400).send();
+    } else {
+      const deleteSQL = `DELETE FROM Series WHERE id=${req.params.seriesId}`;
+      db.run(deleteSQL, function (error) {
+        if (error) {
+          next(error);
+        } else {
+          res.status(204).send();
+        }
+      });
+    }
+  });
 });
 
 module.exports = seriesRouter;

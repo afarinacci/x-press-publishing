@@ -42,7 +42,7 @@ artistsRouter.post('/', (req, res, next) => {
   const biography = req.body.artist.biography;
   const isCurrentlyEmployed = req.body.artist.isCurrentlyEmployed === 0 ? 0 : 1;
   if (!name || !dateOfBirth || !biography) {
-    res.status(400).send();
+    return res.status(400).send();
   }
   db.run(
     'INSERT INTO Artist (name, date_of_birth, biography, is_currently_employed) VALUES ($name, $dateOfBirth, $biography, $isCurrentlyEmployed)',
@@ -74,10 +74,10 @@ artistsRouter.put('/:artistId', (req, res, next) => {
   const biography = req.body.artist.biography;
   const isCurrentlyEmployed = req.body.artist.isCurrentlyEmployed === 0 ? 0 : 1;
   if (!name || !dateOfBirth || !biography) {
-    res.status(400).send();
+    return res.status(400).send();
   }
   db.run(
-    'UPDATE Artist SET name = $name, date_of_birth = $dateOfBirth, biography = $biography, is_currently_employed = $isCurrentlyEmployed WHERE Artist.id = $artistId',
+    'UPDATE Artist SET name=$name, date_of_birth=$dateOfBirth, biography=$biography, is_currently_employed=$isCurrentlyEmployed WHERE id=$artistId',
     {
       $name: name,
       $dateOfBirth: dateOfBirth,
@@ -90,13 +90,12 @@ artistsRouter.put('/:artistId', (req, res, next) => {
         next(error);
       } else {
         db.get(
-          `SELECT * FROM Artist WHERE id=$id`,
-          { $id: req.params.artistId },
-          (err, row) => {
+          `SELECT * FROM Artist WHERE id=${req.params.artistId}`,
+          (err, artist) => {
             if (err) {
               next(err);
             } else {
-              res.status(200).json({ artist: row });
+              res.status(200).json({ artist: artist });
             }
           }
         );
@@ -107,7 +106,7 @@ artistsRouter.put('/:artistId', (req, res, next) => {
 
 artistsRouter.delete('/:artistId', (req, res, next) => {
   db.run(
-    'UPDATE Artist SET is_currently_employed = 0 WHERE Artist.id = $artistId',
+    'UPDATE Artist SET is_currently_employed=0 WHERE id=$artistId',
     { $artistId: req.params.artistId },
     (error) => {
       if (error) {
